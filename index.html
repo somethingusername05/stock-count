@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Stock Count</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: weekly stocktake sheet, category cards, one row per item: last week | added | count | used */
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --fg:#16202B; --muted:#5E6B78; --line:#E2E7EE;
+  --navy:#1F4E78; --navy-soft:#DDEBF7; --green:#2E7D32; --orange:#C55A11;
+  --danger:#B42318; --danger-soft:#FDECEA; --input:#FFF8E1;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0F1720; --surface:#16212C; --fg:#E7EDF3; --muted:#9AA8B6; --line:#26323F;
+  --navy:#7FB2E5; --navy-soft:#1C3249; --green:#7BC98A; --orange:#F0A06A;
+  --danger:#FF8A80; --danger-soft:#3A1F1E; --input:#2A2516; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{margin:0;font-size:28px;color:var(--navy)}
+.sub{margin:4px 0 0;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--fg)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+input,select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid transparent;padding:9px 16px;font-weight:600}
+.primary{background:var(--navy);color:var(--surface)}
+.ghost{background:none;border-color:var(--line);color:var(--fg)}
+.danger{background:var(--danger-soft);color:var(--danger)}
+.spacer{flex:1}
+.msg{min-height:20px;font-size:13px;color:var(--muted)}
+.msg.err{color:var(--danger)}
+.cat{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.cat h2{margin:0;padding:10px 14px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;background:var(--navy-soft);color:var(--navy)}
+.thead,.row{display:grid;grid-template-columns:minmax(140px,1.4fr) minmax(110px,1fr) 90px minmax(170px,1.3fr) 100px 28px;gap:10px;align-items:center;padding:8px 14px}
+.thead{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--line)}
+.row{border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.name{font-weight:500;overflow-wrap:anywhere}
+.term{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.last{color:var(--muted);font-size:13px}
+.box{display:flex;gap:6px;align-items:center}
+.box label{flex-direction:row;align-items:center;gap:4px;text-transform:none;letter-spacing:0;font-size:12px;font-weight:500}
+.box input{width:72px;padding:7px 8px;text-align:right;font-variant-numeric:tabular-nums;background:var(--input)}
+.used{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.used.neg{color:var(--danger)}
+.del{background:none;color:var(--muted);padding:2px 6px;font-size:18px}
+.del:hover{color:var(--danger)}
+details.add{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+details.add summary{cursor:pointer;font-weight:600;color:var(--navy)}
+.addgrid{display:grid;grid-template-columns:2fr 1.3fr 1.2fr 1fr auto;gap:10px;align-items:end;margin-top:12px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (max-width:760px){
+  .thead{display:none}
+  .row{grid-template-columns:1fr auto;grid-template-areas:"name del" "last last" "add add" "box box" "used used";row-gap:6px}
+  .row .name{grid-area:name}.row .last{grid-area:last}.row .addc{grid-area:add}.row .box:not(.addc){grid-area:box}.row .used{grid-area:used;text-align:left}.row .del{grid-area:del}
+  .row .last::before{content:"Last week: "}.row .used::before{content:"Used: ";font-weight:400;color:var(--muted)}
+  .addc::before{content:"Added";font-size:12px;color:var(--muted);width:72px}
+  .row .box:not(.addc)::before{content:"This week";font-size:12px;color:var(--muted);width:72px}
+  .addgrid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Stock Count</h1>
+    <p class="sub"><span class="num" id="counted">0</span> of <span class="num" id="total">0</span> items counted &nbsp;|&nbsp; Used = Last week + Added − This week. Bag/box + grams items show Used in grams.</p>
+  </header>
+
+  <div class="bar">
+    <label>Count date<input type="date" id="fDate"></label>
+    <button class="primary" id="xlsxBtn" type="button">Make Excel file</button>
+    <span class="spacer"></span>
+    <span class="confirm" id="newWeek">
+      <button class="ghost" id="newWeekBtn" type="button">Start new week</button>
+    </span>
+  </div>
+  <div class="msg" id="msg" role="status"></div>
+
+  <div id="list"></div>
+
+  <details class="add">
+    <summary>Add a new item</summary>
+    <form class="addgrid" id="addForm" autocomplete="off">
+      <label>Item name<input id="aName" required maxlength="60"></label>
+      <label>Category<select id="aCat"></select></label>
+      <label>Counted in<select id="aTerm"></select></label>
+      <label>1 full pack (g)<input id="aPack" type="number" min="1" step="any" inputmode="decimal" placeholder="bag/box + g only"></label>
+      <button class="primary" type="submit">Add</button>
+      <label id="aNewCatWrap" hidden>New category name<input id="aNewCat" maxlength="30" placeholder="e.g. SYRUPS"></label>
+    </form>
+  </details>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+// ---------- setup ----------
+const TERMS = {can:["Cans","cans"], bottle:["Bottles","bottles"], box:["Boxes","boxes"], bag:["Bags","bags"],
+  grams:["Grams","g"], piece:["Pieces","pcs"], "box+g":["Boxes","g"], "bag+g":["Bags","g"]};
+const TERM_LABEL = {can:"can", bottle:"bottle", box:"box", bag:"bag", grams:"grams", piece:"piece", "box+g":"box + grams", "bag+g":"bag + grams"};
+const COLS = ["Cans","Bottles","Boxes","Bags","Grams","Pieces"];
+const KEY = "stockcount.v1";
+
+// Starting list with the 01/11/2026 count as last week. [name, category, term, packGrams, lastQty, lastGrams]
+const SEED = [
+ ["Diet Coke","SOFT DRINKS","can",0,39],["Coke Zero","SOFT DRINKS","can",0,26],["Coke Classic","SOFT DRINKS","can",0,24],
+ ["Sprite","SOFT DRINKS","can",0,19],["Solo","SOFT DRINKS","can",0,37],["Sparkling Water","SOFT DRINKS","bottle",0,29],
+ ["Bia SG","BEER & WINE","can",0,16],["HN Beer","BEER & WINE","bottle",0,29],["Sauvignon Blanc","BEER & WINE","bottle",0,24],
+ ["Rose","BEER & WINE","bottle",0,26],["Cuvee","BEER & WINE","bottle",0,23],["Shiraz","BEER & WINE","bottle",0,20],
+ ["Smirnoff","SPIRITS","bottle",0,0.9],["Soho Lychee","SPIRITS","bottle",0,2],["Roku Gin","SPIRITS","bottle",0,0.45],
+ ["Kahlua","SPIRITS","bottle",0,0.7],["Vok","SPIRITS","bottle",0,1.05],
+ ["Whole Coconut","COCONUT","piece",0,1],["Nước Dừa","COCONUT","bag",0,7],["Dừa Top","COCONUT","grams",0,874.1],
+ ["Cozy Trà Đào Cam","COZY TEA","box",0,7],["Cozy Trà Đào Hồng","COZY TEA","box+g",50,5,54.7],["Cozy Trà Xanh","COZY TEA","box+g",50,8,240.5],
+ ["Cozy Trà Hương Nhài","COZY TEA","box+g",50,8,51.9],["Cozy Ô Long","COZY TEA","box+g",50,2,228.8],["Cozy Trà Vải","COZY TEA","box",0,2],
+ ["Trà Xanh Lài","LOOSE TEA","grams",0,378.9],["Hồng Trà Túi Lọc","LOOSE TEA","grams",0,990.9],["Oolong Tea","LOOSE TEA","grams",0,546.9],
+ ["Trà Hoa Cúc","LOOSE TEA","grams",0,303.1],["Mint","LOOSE TEA","grams",0,448.2],
+ ["Matcha","POWDERS","bag+g",200,0,479.7],["Cacao","POWDERS","bag+g",200,2,79.4],["Bột Sữa Dừa","POWDERS","bag+g",500,1,53],
+ ["Bột Sữa Khoai Môn","POWDERS","bag+g",500,0,450.7],["Bột Frappe","POWDERS","bag+g",500,1,303.1],["Bột Hoa Anh Đào","POWDERS","bag+g",500,1,0],
+ ["Cafe Mixed","COFFEE","grams",0,1474.1],["Cà Phê Muối","COFFEE","grams",0,291.1],["Cafe Nâu","COFFEE","bag",0,3],["Cafe Bạc","COFFEE","bag",0,3],
+ ["Thạch Dừa","TOPPINGS","box",0,3],["Thạch Xanh","TOPPINGS","box",0,2],["Thạch Đen","TOPPINGS","box",0,2],["Hạt Đác","TOPPINGS","box",0,2],
+ ["Kumquat","TOPPINGS","box",0,9],["Plum Base","TOPPINGS","box",0,1],
+ ["Đào","CANNED","can",0,6],["Nhãn","CANNED","can",0,4],["Vải","CANNED","can",0,2],["Thốt Nốt","CANNED","can",0,2],["Mít","CANNED","can",0,2],["Sữa Đặc","CANNED","can",0,17],
+];
+
+const $ = id => document.getElementById(id);
+const isNum = v => typeof v === "number" && isFinite(v);
+const r2 = v => Math.round(v * 100) / 100;
+let state;
+
+function seedState(){
+  return {lastDate:"2026-11-01", items: SEED.map(([name,cat,term,pack,lq,lg], i) => ({
+    id: "i" + i, name, cat, term, pack: pack || null,
+    last: {qty: lq, grams: term.endsWith("+g") ? (lg ?? 0) : null},
+    added: null, qty: null, grams: null }))};
+}
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.items)) return s; } catch(e){}
+  return seedState();
+}
+let saveOk = true;
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(state)); saveOk = true; }
+  catch(e){ if (saveOk) setMsg("This browser isn't saving (private window?). Make the Excel file before closing.", true); saveOk = false; }
+}
+function setMsg(t, err){ $("msg").textContent = t || ""; $("msg").className = "msg" + (err ? " err" : ""); }
+
+// ---------- maths ----------
+const packed = it => it.term.endsWith("+g");
+function counted(it){ return isNum(it.qty) || isNum(it.grams); }
+function lastCounted(it){ return it.last && (isNum(it.last.qty) || isNum(it.last.grams)); }
+function total(it, o){ return (o.qty || 0) * (it.pack || 0) + (o.grams || 0); }
+function used(it){
+  if (!counted(it) || !lastCounted(it)) return null;
+  const add = isNum(it.added) ? it.added : 0;
+  if (packed(it)) { if (!it.pack) return null; return r2(total(it, it.last) + add * it.pack - total(it, it)); }
+  return r2((it.last.qty || 0) + add - (it.qty || 0));
+}
+function fmt(v){ return (Math.round(v*100)/100).toLocaleString("en-AU", {maximumFractionDigits:2}); }
+function describe(it, o){
+  if (!o || (!isNum(o.qty) && !isNum(o.grams))) return "not counted";
+  const u = TERMS[it.term][1];
+  if (packed(it)) {
+    const p = [];
+    const bag = it.term.startsWith("bag");
+    if (o.qty) p.push(`${fmt(o.qty)} ${o.qty === 1 ? (bag ? "bag" : "box") : (bag ? "bags" : "boxes")}`);
+    if (isNum(o.grams) && (o.grams || !o.qty)) p.push(`${fmt(o.grams)} g`);
+    return p.join(" + ");
+  }
+  if (it.term === "grams") return `${fmt(o.qty)} g`;
+  const one = {can:"can",bottle:"bottle",box:"box",bag:"bag",piece:"piece"}[it.term];
+  return `${fmt(o.qty)} ${o.qty === 1 ? one : TERMS[it.term][1]}`;
+}
+function usedUnit(it){ return packed(it) || it.term === "grams" ? "g" : TERMS[it.term][1]; }
+
+// ---------- render ----------
+function categories(){
+  const seen = []; for (const it of state.items) if (!seen.includes(it.cat)) seen.push(it.cat); return seen;
+}
+function numInput(it, field, unit, label){
+  const lab = document.createElement("label");
+  const inp = document.createElement("input");
+  inp.type = "number"; inp.step = "any"; inp.min = "0"; inp.inputMode = "decimal"; inp.placeholder = "–";
+  inp.id = `${field}-${it.id}`; inp.setAttribute("aria-label", `${it.name} ${label || unit}`);
+  if (isNum(it[field])) inp.value = it[field];
+  inp.addEventListener("input", () => {
+    const v = inp.value === "" ? null : Number(inp.value);
+    it[field] = isFinite(v) ? v : null; save(); refreshRow(it); refreshCount();
+  });
+  lab.append(inp);
+  if (unit) { const s = document.createElement("span"); s.textContent = unit; lab.append(s); }
+  return lab;
+}
+const rowEls = {};
+function render(){
+  const list = $("list"); list.innerHTML = "";
+  for (const cat of categories()){
+    const sec = document.createElement("section"); sec.className = "cat";
+    const h = document.createElement("h2"); h.textContent = cat; sec.append(h);
+    const th = document.createElement("div"); th.className = "thead";
+    for (const t of ["Item","Last week","Added","This week","Used",""]) { const d = document.createElement("div"); d.textContent = t; th.append(d); }
+    sec.append(th);
+    for (const it of state.items.filter(i => i.cat === cat)){
+      const row = document.createElement("div"); row.className = "row";
+      const name = document.createElement("div"); name.className = "name"; name.textContent = it.name;
+      const term = document.createElement("span"); term.className = "term";
+      term.textContent = TERM_LABEL[it.term] + (packed(it) ? ` · 1 ${it.term.startsWith("bag") ? "bag" : "box"} = ${it.pack ?? "?"} g` : "");
+      name.append(term);
+      const last = document.createElement("div"); last.className = "last";
+      const addc = document.createElement("div"); addc.className = "box addc";
+      addc.append(numInput(it, "added", "", "added"));
+      const box = document.createElement("div"); box.className = "box";
+      if (packed(it)) box.append(numInput(it, "qty", TERMS[it.term][0].toLowerCase()), numInput(it, "grams", "g"));
+      else box.append(numInput(it, "qty", TERMS[it.term][1]));
+      const u = document.createElement("div"); u.className = "used";
+      const del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "×";
+      del.setAttribute("aria-label", "Remove " + it.name);
+      del.onclick = () => askRemove(it, row, del);
+      row.append(name, last, addc, box, u, del); sec.append(row);
+      rowEls[it.id] = {last, u};
+      refreshRow(it);
+    }
+    list.append(sec);
+  }
+  refreshCount(); fillAddForm();
+}
+function refreshRow(it){
+  const e = rowEls[it.id]; if (!e) return;
+  e.last.textContent = describe(it, it.last);
+  const v = used(it);
+  e.u.textContent = v === null ? "" : `${fmt(v)} ${usedUnit(it)}`;
+  e.u.classList.toggle("neg", v !== null && v < 0);
+}
+function refreshCount(){
+  $("counted").textContent = state.items.filter(counted).length;
+  $("total").textContent = state.items.length;
+}
+function askRemove(it, row, del){
+  const c = document.createElement("span"); c.className = "confirm";
+  const yes = document.createElement("button"); yes.className = "danger"; yes.type = "button"; yes.textContent = "Remove";
+  const no = document.createElement("button"); no.className = "ghost"; no.type = "button"; no.textContent = "Keep";
+  yes.onclick = () => { state.items = state.items.filter(i => i !== it); save(); render(); setMsg(`Removed ${it.name}.`); };
+  no.onclick = () => c.replaceWith(del);
+  c.append(yes, no); del.replaceWith(c);
+}
+
+// ---------- add item ----------
+function fillAddForm(){
+  const cur = $("aCat").value; $("aCat").innerHTML = "";
+  for (const c of categories()) $("aCat").add(new Option(c, c));
+  $("aCat").add(new Option("+ New category", "__new"));
+  if (cur) $("aCat").value = cur;
+  if (!$("aTerm").options.length) for (const [k, v] of Object.entries(TERM_LABEL)) $("aTerm").add(new Option(v, k));
+}
+$("aCat").addEventListener("change", () => { $("aNewCatWrap").hidden = $("aCat").value !== "__new"; });
+$("addForm").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const name = $("aName").value.trim(); if (!name) return;
+  let cat = $("aCat").value;
+  if (cat === "__new") { cat = $("aNewCat").value.trim().toUpperCase(); if (!cat) return setMsg("Type a name for the new category.", true); }
+  if (state.items.some(i => i.name.toLowerCase() === name.toLowerCase())) return setMsg(`${name} is already on the list.`, true);
+  const term = $("aTerm").value, pack = Number($("aPack").value) || null;
+  if (term.endsWith("+g") && !pack) return setMsg("Type how many grams are in one full bag/box.", true);
+  const idx = state.items.map(i => i.cat).lastIndexOf(cat);
+  const it = {id: "n" + Date.now(), name, cat, term, pack, last: null, added: null, qty: null, grams: null};
+  if (idx === -1) state.items.push(it); else state.items.splice(idx + 1, 0, it);
+  save(); render(); $("aName").value = ""; $("aPack").value = ""; setMsg(`Added ${name}.`);
+});
+
+// ---------- start new week ----------
+function newWeekButton(){
+  const box = $("newWeek"); box.innerHTML = "";
+  const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Start new week";
+  b.addEventListener("click", askNewWeek); box.append(b);
+}
+function askNewWeek(){
+  const n = state.items.filter(counted).length;
+  const box = $("newWeek"); box.innerHTML = "";
+  const t = document.createElement("span"); t.textContent = n < state.items.length
+    ? `${state.items.length - n} items aren't counted. Start a new week anyway?` : "Move this count to Last week?";
+  const yes = document.createElement("button"); yes.className = "primary"; yes.type = "button"; yes.textContent = "Yes, new week";
+  const no = document.createElement("button"); no.className = "ghost"; no.type = "button"; no.textContent = "Cancel";
+  no.onclick = newWeekButton;
+  yes.onclick = () => {
+    for (const it of state.items) {
+      it.last = counted(it) ? {qty: it.qty, grams: packed(it) ? (it.grams ?? 0) : null} : null;
+      it.qty = it.grams = it.added = null;
+    }
+    state.lastDate = $("fDate").value; save(); render(); newWeekButton();
+    setMsg("New week started. Last week now shows the count you just finished.");
+  };
+  box.append(t, yes, no);
+}
+newWeekButton();
+
+// ---------- Excel (same layout as the owner's stock file) ----------
+async function makeExcel(){
+  if (typeof ExcelJS === "undefined") return setMsg("The Excel maker didn't load. Check the internet connection and reload.", true);
+  const date = $("fDate").value; const [y, m, d] = date.split("-");
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(`Stock ${d}-${m}-${y}`, {views: [{state: "frozen", xSplit: 1, ySplit: 4, showGridLines: false}]});
+  const A = {name: "Arial", size: 10}, NAVY = "FF1F4E78", GREEN = "FF2E7D32", ORANGE = "FFC55A11";
+  const B = {style: "thin", color: {argb: "FFBFBFBF"}}, border = {top: B, bottom: B, left: B, right: B};
+  ws.getCell("A1").value = `Stock Count ${d}/${m}/${y}`; ws.getCell("A1").font = {name: "Arial", size: 14, bold: true, color: {argb: NAVY}};
+  ws.getCell("A2").value = "Used = Last Week + Added − This Week. Bag/box + grams items: Used is in grams. Red = more stock than expected: check for a missing delivery or a count mistake.";
+  ws.getCell("A2").font = {...A, italic: true, color: {argb: "FF595959"}};
+  const head = (cell, text, color) => { const c = ws.getCell(cell); c.value = text; c.font = {...A, bold: true, color: {argb: "FFFFFFFF"}};
+    c.fill = {type: "pattern", pattern: "solid", fgColor: {argb: color}}; c.alignment = {horizontal: "center", vertical: "middle", wrapText: true}; c.border = border; };
+  head("A3", "Item", NAVY); head("B3", "Last Week", ORANGE); head("C3", "Added", GREEN); head("D3", "This Week Count", NAVY); head("J3", "Used", ORANGE);
+  COLS.forEach((u, i) => head(String.fromCharCode(68 + i) + "4", u, NAVY));
+  ws.mergeCells("A3:A4"); ws.mergeCells("B3:B4"); ws.mergeCells("C3:C4"); ws.mergeCells("D3:I3"); ws.mergeCells("J3:J4");
+  let r = 5;
+  for (const cat of categories()) {
+    const cr = ws.getRow(r++); cr.getCell(1).value = cat;
+    for (let c = 1; c <= 10; c++) { const x = cr.getCell(c); x.fill = {type: "pattern", pattern: "solid", fgColor: {argb: "FFDDEBF7"}}; x.font = {...A, bold: true, color: {argb: NAVY}}; x.border = border; }
+    for (const it of state.items.filter(i => i.cat === cat)) {
+      const row = ws.getRow(r++);
+      row.getCell(1).value = it.name;
+      row.getCell(2).value = describe(it, it.last);
+      if (isNum(it.added)) { row.getCell(3).value = it.added; row.getCell(3).numFmt = `General" ${packed(it) ? TERMS[it.term][0].toLowerCase() : TERMS[it.term][1]}"`; }
+      const main = 4 + COLS.indexOf(TERMS[it.term][0]);
+      if (isNum(it.qty)) row.getCell(main).value = it.qty;
+      if (packed(it) && isNum(it.grams)) row.getCell(8).value = it.grams;
+      const v = used(it);
+      if (v !== null) { const c = row.getCell(10); c.value = v; c.numFmt = `General" ${usedUnit(it)}"`;
+        if (v < 0) { c.fill = {type: "pattern", pattern: "solid", fgColor: {argb: "FFFCE4E4"}}; c.font = {...A, bold: true, color: {argb: "FFC00000"}}; } }
+      for (let c = 1; c <= 10; c++) { const x = row.getCell(c); if (!(c === 10 && v < 0)) x.font = {...A, bold: c === 3 || c === 10, color: {argb: c === 3 ? GREEN : c === 2 ? "FF595959" : "FF000000"}};
+        x.border = border; x.alignment = {horizontal: c === 1 ? "left" : "center", vertical: "middle"}; }
+    }
+  }
+  [24, 20, 12, 8, 9, 8, 8, 10, 8, 12].forEach((w, i) => ws.getColumn(i + 1).width = w);
+  const ps = wb.addWorksheet("Pack Sizes");
+  ps.addRow(["Item", "1 full pack (g)"]).eachCell(c => { c.font = {...A, bold: true, color: {argb: "FFFFFFFF"}}; c.fill = {type: "pattern", pattern: "solid", fgColor: {argb: NAVY}}; });
+  for (const it of state.items.filter(packed)) ps.addRow([it.name, it.pack]);
+  ps.getColumn(1).width = 24; ps.getColumn(2).width = 16;
+  const buf = await wb.xlsx.writeBuffer();
+  const url = URL.createObjectURL(new Blob([buf], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  const a = document.createElement("a"); a.href = url; a.download = `Stock_Count_${date}.xlsx`; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setMsg(`Downloaded Stock_Count_${date}.xlsx.`);
+}
+$("xlsxBtn").addEventListener("click", () => { $("xlsxBtn").disabled = true; makeExcel().catch(() => setMsg("The Excel file couldn't be made.", true)).finally(() => $("xlsxBtn").disabled = false); });
+
+// ---------- start ----------
+state = load();
+(() => { const t = new Date(); $("fDate").value = new Date(t - t.getTimezoneOffset() * 60000).toISOString().slice(0, 10); })();
+render();
+</script>
+</body>
+</html>
