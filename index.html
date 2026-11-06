@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#E5E0DA">
 <title>Stock Count</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap">
 <style>
@@ -12,11 +14,8 @@
   --outline:#2B2522; --tan:#ECCB9C; --orange:#DB8452; --blue:#7EA2C8; --blush:#F1AAA2; --olive:#83875A;
   --danger:#C0463B; --danger-soft:#F7DCD7; --input:#FBF8F3;
   --font:"Quicksand","Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:only light; /* always the light pastel look, even when the phone is in dark mode */
 }
-@media (prefers-color-scheme: dark){:root{
-  --bg:#26211E; --tile:rgba(255,255,255,.06); --paper:#3A322D; --fg:#F2EAE1; --muted:#A99E94; --line:rgba(255,255,255,.1);
-  --outline:#D8CABD; --tan:#E2BF8E; --orange:#E79A6B; --blue:#93B4D6; --blush:#E79E97; --olive:#A4A877;
-  --danger:#FF9C90; --danger-soft:#4A2925; --input:#2F2925; color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;font-weight:500;letter-spacing:.01em;
   padding:28px max(16px,env(safe-area-inset-right,0px)) 56px max(16px,env(safe-area-inset-left,0px))}
