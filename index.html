@@ -4,73 +4,113 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Stock Count</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap">
 <style>
-/* Layout: weekly stocktake sheet, category cards, one row per item: last week | added | count | used */
+/* Look: pastel doodle home screen. Warm grey page, soft translucent tiles, white widget headers, ink-outlined sticker buttons. */
 :root{
-  --bg:#F4F6F9; --surface:#FFFFFF; --fg:#16202B; --muted:#5E6B78; --line:#E2E7EE;
-  --navy:#1F4E78; --navy-soft:#DDEBF7; --green:#2E7D32; --orange:#C55A11;
-  --danger:#B42318; --danger-soft:#FDECEA; --input:#FFF8E1;
-  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bg:#E5E0DA; --tile:rgba(255,255,255,.34); --paper:#FFFFFF; --fg:#2B2522; --muted:#8C837B; --line:rgba(43,37,34,.12);
+  --outline:#2B2522; --tan:#ECCB9C; --orange:#DB8452; --blue:#7EA2C8; --blush:#F1AAA2; --olive:#83875A;
+  --danger:#C0463B; --danger-soft:#F7DCD7; --input:#FBF8F3;
+  --font:"Quicksand","Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root{
-  --bg:#0F1720; --surface:#16212C; --fg:#E7EDF3; --muted:#9AA8B6; --line:#26323F;
-  --navy:#7FB2E5; --navy-soft:#1C3249; --green:#7BC98A; --orange:#F0A06A;
-  --danger:#FF8A80; --danger-soft:#3A1F1E; --input:#2A2516; color-scheme:dark}}
+  --bg:#26211E; --tile:rgba(255,255,255,.06); --paper:#3A322D; --fg:#F2EAE1; --muted:#A99E94; --line:rgba(255,255,255,.1);
+  --outline:#D8CABD; --tan:#E2BF8E; --orange:#E79A6B; --blue:#93B4D6; --blush:#E79E97; --olive:#A4A877;
+  --danger:#FF9C90; --danger-soft:#4A2925; --input:#2F2925; color-scheme:dark}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;
-  padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
-.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-h1{margin:0;font-size:28px;color:var(--navy)}
-.sub{margin:4px 0 0;color:var(--muted)}
-.num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--fg)}
-.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
-label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-input,select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);min-width:0}
-input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
-button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid transparent;padding:9px 16px;font-weight:600}
-.primary{background:var(--navy);color:var(--surface)}
-.ghost{background:none;border-color:var(--line);color:var(--fg)}
-.danger{background:var(--danger-soft);color:var(--danger)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;font-weight:500;letter-spacing:.01em;
+  padding:28px max(16px,env(safe-area-inset-right,0px)) 56px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{position:relative;display:flex;align-items:center;gap:16px;padding:6px 4px}
+.mascot{flex:none;width:72px;height:72px}
+h1{margin:0;font-size:30px;font-weight:700;letter-spacing:.16em;text-transform:lowercase}
+.sub{margin:6px 0 0;color:var(--muted);font-size:13px;letter-spacing:.04em;line-height:1.5}
+.deco{position:absolute;pointer-events:none}
+.num{font-variant-numeric:tabular-nums;font-weight:700;color:var(--fg)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:var(--tile);border-radius:30px;padding:16px 20px}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted);text-transform:lowercase;letter-spacing:.14em}
+input,select{font:inherit;font-size:15px;font-weight:600;padding:8px 12px;border:1.5px solid var(--outline);border-radius:14px;background:var(--input);color:var(--fg);min-width:0}
+input::placeholder{color:var(--muted);opacity:.6}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:999px;border:2px solid var(--outline);padding:8px 18px;font-weight:700;letter-spacing:.08em;text-transform:lowercase;
+  box-shadow:0 3px 0 var(--outline);transition:transform .08s,box-shadow .08s}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--outline)}
+button:disabled{opacity:.55;cursor:default}
+.primary{background:var(--tan);color:#2B2522}
+.ghost{background:var(--paper);color:var(--fg)}
+.danger{background:var(--danger-soft);color:var(--danger);border-color:var(--danger);box-shadow:0 3px 0 var(--danger)}
 .spacer{flex:1}
-.msg{min-height:20px;font-size:13px;color:var(--muted)}
-.msg.err{color:var(--danger)}
-.cat{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.cat h2{margin:0;padding:10px 14px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;background:var(--navy-soft);color:var(--navy)}
-.thead,.row{display:grid;grid-template-columns:minmax(140px,1.4fr) minmax(110px,1fr) 90px minmax(170px,1.3fr) 100px 28px;gap:10px;align-items:center;padding:8px 14px}
-.thead{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--line)}
-.row{border-top:1px solid var(--line)}
-.row:first-of-type{border-top:0}
-.name{font-weight:500;overflow-wrap:anywhere}
-.term{display:block;font-size:11px;color:var(--muted);font-weight:400}
-.last{color:var(--muted);font-size:13px}
+.msg{min-height:20px;font-size:13px;color:var(--muted);letter-spacing:.04em;padding:0 8px}
+.msg:empty{min-height:0;margin:-10px 0}
+#list{display:flex;flex-direction:column;gap:18px}
+.msg.err{color:var(--danger);font-weight:600}
+.cat{background:var(--tile);border-radius:28px;overflow:hidden}
+.cat h2{display:flex;align-items:center;gap:12px;margin:0;padding:9px 22px;font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--paper);color:var(--fg)}
+.ico{width:32px;height:32px;flex:none;overflow:visible}
+.ico>*:not(.e):not(.ck){stroke:var(--outline);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ico .e{fill:#2B2522}.ico .ck{fill:#F1AAA2}
+.thead,.row{display:grid;grid-template-columns:minmax(140px,1.4fr) minmax(110px,1fr) 90px minmax(170px,1.3fr) 100px 28px;gap:10px;align-items:center;padding:10px 22px}
+.thead{font-size:12px;font-weight:600;text-transform:lowercase;letter-spacing:.14em;color:var(--muted);padding-top:14px;padding-bottom:4px}
+.thead div:nth-child(5){text-align:right}
+.row{border-top:1.5px dashed var(--line)}
+.thead + .row{border-top:0}
+.name{font-weight:700;overflow-wrap:anywhere}
+.term{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.06em;margin-top:1px}
+.last{color:var(--muted);font-size:13px;font-weight:600}
 .box{display:flex;gap:6px;align-items:center}
-.box label{flex-direction:row;align-items:center;gap:4px;text-transform:none;letter-spacing:0;font-size:12px;font-weight:500}
-.box input{width:72px;padding:7px 8px;text-align:right;font-variant-numeric:tabular-nums;background:var(--input)}
-.used{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.used.neg{color:var(--danger)}
-.del{background:none;color:var(--muted);padding:2px 6px;font-size:18px}
+.box label{flex-direction:row;align-items:center;gap:5px;text-transform:none;letter-spacing:.02em;font-size:12px;font-weight:600}
+.box input{width:72px;padding:7px 9px;text-align:right;font-variant-numeric:tabular-nums;border-radius:12px}
+.used{justify-self:end;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.used:not(:empty){background:var(--tan);color:#2B2522;border-radius:999px;padding:3px 11px;font-size:13px}
+.used.neg{background:var(--danger-soft);color:var(--danger)}
+.del{background:none;border:0;box-shadow:none;color:var(--muted);padding:2px 6px;font-size:20px;line-height:1}
 .del:hover{color:var(--danger)}
-details.add{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-details.add summary{cursor:pointer;font-weight:600;color:var(--navy)}
-.addgrid{display:grid;grid-template-columns:2fr 1.3fr 1.2fr 1fr auto;gap:10px;align-items:end;margin-top:12px}
+.del:active{transform:none;box-shadow:none}
+.row .confirm button{padding:5px 12px;font-size:13px}
+details.add{background:var(--tile);border-radius:28px;padding:16px 22px}
+details.add summary{cursor:pointer;font-weight:700;letter-spacing:.14em;text-transform:lowercase;color:var(--fg);list-style:none;display:flex;align-items:center;gap:10px}
+details.add summary::-webkit-details-marker{display:none}
+details.add summary::before{content:"+";display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--outline);background:var(--blush);color:#2B2522;font-size:18px;line-height:1}
+details.add[open] summary::before{content:"–"}
+.addgrid{display:grid;grid-template-columns:2fr 1.3fr 1.2fr 1fr auto;gap:12px;align-items:end;margin-top:16px}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media (max-width:760px){
+  h1{font-size:24px}
+  .mascot{width:56px;height:56px}
   .thead{display:none}
-  .row{grid-template-columns:1fr auto;grid-template-areas:"name del" "last last" "add add" "box box" "used used";row-gap:6px}
-  .row .name{grid-area:name}.row .last{grid-area:last}.row .addc{grid-area:add}.row .box:not(.addc){grid-area:box}.row .used{grid-area:used;text-align:left}.row .del{grid-area:del}
-  .row .last::before{content:"Last week: "}.row .used::before{content:"Used: ";font-weight:400;color:var(--muted)}
-  .addc::before{content:"Added";font-size:12px;color:var(--muted);width:72px}
-  .row .box:not(.addc)::before{content:"This week";font-size:12px;color:var(--muted);width:72px}
+  .row{grid-template-columns:1fr auto;grid-template-areas:"name del" "last last" "add add" "box box" "used used";row-gap:8px;padding:12px 18px}
+  .row .name{grid-area:name}.row .last{grid-area:last}.row .addc{grid-area:add}.row .box:not(.addc){grid-area:box}.row .used{grid-area:used;justify-self:start}.row .del{grid-area:del}
+  .row .last::before{content:"last week · ";letter-spacing:.08em}.row .used::before{content:"used · ";font-weight:500}
+  .addc::before{content:"added";font-size:12px;color:var(--muted);width:76px;letter-spacing:.1em}
+  .row .box:not(.addc)::before{content:"this week";font-size:12px;color:var(--muted);width:76px;letter-spacing:.1em}
   .addgrid{grid-template-columns:1fr 1fr}
+  .row .used:empty{display:none}
+  .row{grid-template-areas:"name del" "last last" "add add" "box box" "used used"}
+  .cat h2{padding:13px 18px}
 }
 </style>
+
 </head>
 <body>
 <div class="wrap">
   <header>
+    <svg class="mascot" viewBox="0 0 72 72" aria-hidden="true">
+      <path d="M12 26 L36 16 L60 26 L60 56 Q60 60 56 60 L16 60 Q12 60 12 56 Z" fill="#ECCB9C" stroke="#2B2522" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M12 26 L36 34 L60 26 M36 34 L36 40" fill="none" stroke="#2B2522" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 26 L4 18 L28 9 L36 16" fill="#F6E2C3" stroke="#2B2522" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M60 26 L68 18 L44 9 L36 16" fill="#F6E2C3" stroke="#2B2522" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="27" cy="45" r="2.6" fill="#2B2522"/><circle cx="45" cy="45" r="2.6" fill="#2B2522"/>
+      <ellipse cx="21" cy="50.5" rx="4" ry="2.6" fill="#F1AAA2"/><ellipse cx="51" cy="50.5" rx="4" ry="2.6" fill="#F1AAA2"/>
+      <path d="M32.5 49 Q36 52.5 39.5 49" fill="none" stroke="#2B2522" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    <svg class="deco" style="left:62px;top:-4px" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="#ECCB9C" stroke-width="3.2" stroke-linecap="round"/></svg>
+    <svg class="deco" style="left:-8px;bottom:2px" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2 L11 5 L4 11 Z" fill="#7EA2C8"/></svg>
+    <svg class="deco" style="right:6px;top:4px" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 3 L12 6 L5 12 Z" fill="#DB8452"/></svg>
+    <svg class="deco" style="right:44px;bottom:-6px" width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="#F1AAA2" stroke-width="3.2" stroke-linecap="round"/></svg>
+    <div>
     <h1>Stock Count</h1>
     <p class="sub"><span class="num" id="counted">0</span> of <span class="num" id="total">0</span> items counted &nbsp;|&nbsp; Used = Last week + Added − This week. Bag/box + grams items show Used in grams.</p>
+    </div>
   </header>
 
   <div class="bar">
@@ -178,6 +218,28 @@ function describe(it, o){
 }
 function usedUnit(it){ return packed(it) || it.term === "grams" ? "g" : TERMS[it.term][1]; }
 
+// ---------- category doodles (picked by keywords in the category name) ----------
+const face = (x, y) => `<circle class="e" cx="${x-2.6}" cy="${y}" r="1.15"/><circle class="e" cx="${x+2.6}" cy="${y}" r="1.15"/>` +
+  `<ellipse class="ck" cx="${x-4.6}" cy="${y+2.2}" rx="1.7" ry="1.1"/><ellipse class="ck" cx="${x+4.6}" cy="${y+2.2}" rx="1.7" ry="1.1"/>` +
+  `<path fill="none" d="M${x-1.1} ${y+1.4} Q${x} ${y+2.6} ${x+1.1} ${y+1.4}"/>`;
+const DOODLES = [
+  [/SOFT|SODA|DRINK/, `<path fill="none" d="M18 8 L20 2.5 L24.5 2.5"/><rect x="9" y="7" width="14" height="22" rx="3" fill="#EFA08F"/><path fill="none" d="M9 11 H23 M9 25 H23"/>` + face(16, 17.5)],
+  [/BEER|WINE/, `<path fill="none" d="M21 15 H24 A3 3 0 0 1 27 18 V21 A3 3 0 0 1 24 24 H21"/><rect x="6" y="11" width="15" height="18" rx="2.5" fill="#F2C46B"/><path fill="#FFFFFF" d="M5 12.5 Q4 8 8.5 8.5 Q10.5 4.5 14.5 6.5 Q18 4 20.5 8 Q24 8.5 22 12.5 Z"/>` + face(13.5, 19)],
+  [/SPIRIT|LIQUOR|VODKA|GIN/, `<path fill="#BFCDA3" d="M13 5 H19 V9 Q24 11 24 16 V27 Q24 29 22 29 H10 Q8 29 8 27 V16 Q8 11 13 9 Z"/><rect x="12.5" y="1.5" width="7" height="4" rx="1" fill="#D9AE74"/><rect x="9" y="16.5" width="14" height="9" rx="1.5" fill="#FFFFFF"/>` + face(16, 20)],
+  [/COCONUT|DỪA|DUA/, `<path fill="none" d="M19 13 L22 3 L26 3"/><circle cx="16" cy="18" r="11" fill="#B08560"/><ellipse cx="16" cy="13" rx="9.2" ry="3.2" fill="#FFF8EA"/>` + face(16, 20.5)],
+  [/COZY|TEA ?BAG|TÚI LỌC/, `<path fill="none" d="M17 12 Q18.5 7 22 6.5"/><rect x="21" y="3" width="6" height="5" rx="1" fill="#ECCB9C"/><path fill="none" d="M24 14 A3.5 3.5 0 0 1 24 21"/><path fill="#F7D9D2" d="M6 12 H24 V17 A9 9 0 0 1 6 17 Z"/><path fill="none" d="M3 28.5 H27"/>` + face(15, 17)],
+  [/TEA|TRÀ|LEAF/, `<path fill="#A9C08A" d="M5 27 Q4 7 27 5 Q27 27 5 27 Z"/><path fill="none" d="M5 27 Q9 23 12 20"/>` + face(17, 15.5)],
+  [/POWDER|BỘT|MATCHA/, `<path fill="#C9DBA8" d="M9 9 H23 L25 27 Q25 29 23 29 H9 Q7 29 7 27 Z"/><rect x="8" y="4" width="16" height="5" rx="1.2" fill="#FFFFFF"/><path fill="none" d="M11 6.5 H21"/>` + face(16, 19)],
+  [/COFFEE|CAFE|CÀ PHÊ/, `<path fill="none" d="M12 9.5 Q10.5 7.5 12 5.5 Q13.5 3.5 12 1.5 M18 9.5 Q16.5 7.5 18 5.5 Q19.5 3.5 18 1.5"/><path fill="none" d="M24 15 H25 A3 3 0 0 1 25 21 H24"/><path fill="#C69C74" d="M6 12 H24 V22 A6 6 0 0 1 18 28 H12 A6 6 0 0 1 6 22 Z"/>` + face(15, 19)],
+  [/TOPPING|JELLY|THẠCH/, `<path fill="none" d="M16 6 Q17 2.5 20 2"/><path fill="#F4C9A0" d="M8 25 Q7 9 16 8.5 Q25 9 24 25 Z"/><path fill="none" d="M4.5 26.5 H27.5"/><circle cx="16" cy="7.5" r="2.6" fill="#E26B5C"/>` + face(16, 18.5)],
+  [/CAN/, `<rect x="7" y="9" width="18" height="19" rx="2" fill="#9FBBD8"/><ellipse cx="16" cy="9" rx="9" ry="2.6" fill="#DCE6F0"/><rect x="7" y="15" width="18" height="8" fill="#FFFFFF"/>` + face(16, 18.5)],
+];
+const BOX_DOODLE = `<path fill="#ECCB9C" d="M5 12 L16 8 L27 12 V27 Q27 29 25 29 H7 Q5 29 5 27 Z"/><path fill="none" d="M5 12 L16 15 L27 12"/>` + face(16, 21.5);
+function iconFor(cat){
+  const hit = DOODLES.find(([re]) => re.test(cat.toUpperCase()));
+  return `<svg class="ico" viewBox="0 0 32 32" aria-hidden="true">${hit ? hit[1] : BOX_DOODLE}</svg>`;
+}
+
 // ---------- render ----------
 function categories(){
   const seen = []; for (const it of state.items) if (!seen.includes(it.cat)) seen.push(it.cat); return seen;
@@ -201,7 +263,7 @@ function render(){
   const list = $("list"); list.innerHTML = "";
   for (const cat of categories()){
     const sec = document.createElement("section"); sec.className = "cat";
-    const h = document.createElement("h2"); h.textContent = cat; sec.append(h);
+    const h = document.createElement("h2"); h.innerHTML = iconFor(cat); h.append(cat); sec.append(h);
     const th = document.createElement("div"); th.className = "thead";
     for (const t of ["Item","Last week","Added","This week","Used",""]) { const d = document.createElement("div"); d.textContent = t; th.append(d); }
     sec.append(th);
