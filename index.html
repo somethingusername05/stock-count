@@ -148,8 +148,9 @@ const KEY = "stockcount.v1";
 // Starting list with the 08/11/2026 count as last week. [name, category, term, packGrams, lastQty, lastGrams]
 // Spirits and Nước Dừa were not counted on 08/11, so they keep the 01/11 figures.
 const SEED_DATE = "2026-11-08";
+const SEED_VERSION = 2; // raise this whenever SEED is corrected, so phones pick up the fix
 const SEED = [
- ["Diet Coke","SOFT DRINKS","can",0,17],["Coke Zero","SOFT DRINKS","can",0,18],["Coke Classic","SOFT DRINKS","can",0,28],
+ ["Diet Coke","SOFT DRINKS","can",0,47],["Coke Zero","SOFT DRINKS","can",0,48],["Coke Classic","SOFT DRINKS","can",0,28],
  ["Sprite","SOFT DRINKS","can",0,31],["Solo","SOFT DRINKS","can",0,28],["Sparkling Water","SOFT DRINKS","bottle",0,24],
  ["Bia SG","BEER & WINE","can",0,16],["HN Beer","BEER & WINE","bottle",0,32],["Sauvignon Blanc","BEER & WINE","bottle",0,24],
  ["Rose","BEER & WINE","bottle",0,23],["Cuvee","BEER & WINE","bottle",0,26],["Shiraz","BEER & WINE","bottle",0,20],
@@ -174,7 +175,7 @@ const r2 = v => Math.round(v * 100) / 100;
 let state;
 
 function seedState(){
-  return {lastDate:SEED_DATE, items: SEED.map(([name,cat,term,pack,lq,lg], i) => ({
+  return {lastDate:SEED_DATE, seedVersion:SEED_VERSION, items: SEED.map(([name,cat,term,pack,lq,lg], i) => ({
     id: "i" + i, name, cat, term, pack: pack || null,
     last: {qty: lq, grams: term.endsWith("+g") ? (lg ?? 0) : null},
     added: null, qty: null, grams: null }))};
@@ -184,11 +185,11 @@ function load(){
     const s = JSON.parse(localStorage.getItem(KEY));
     if (s && Array.isArray(s.items)) {
       // Saved data from before the 08/11 count: update Last week, keep this week's entries.
-      if (!s.lastDate || s.lastDate < SEED_DATE) {
+      if (!s.lastDate || s.lastDate < SEED_DATE || (s.lastDate === SEED_DATE && (s.seedVersion || 0) < SEED_VERSION)) {
         const fresh = seedState(), byName = {};
         for (const it of fresh.items) byName[it.name] = it;
         for (const it of s.items) if (byName[it.name]) { it.last = byName[it.name].last; it.pack = byName[it.name].pack; }
-        s.lastDate = SEED_DATE;
+        s.lastDate = SEED_DATE; s.seedVersion = SEED_VERSION;
         localStorage.setItem(KEY, JSON.stringify(s));
       }
       return s;
@@ -419,6 +420,40 @@ sendButton();
 state = load();
 (() => { const t = new Date(); $("fDate").value = new Date(t - t.getTimezoneOffset() * 60000).toISOString().slice(0, 10); })();
 render();
+
+// ---------- Last week from BV Stock_Count_Owner ----------
+// Uses the newest Stock tab before the count date, so edits made in the Sheet show up here.
+const SHEET_COL = {can:"D", bottle:"E", box:"F", bag:"G", grams:"H", piece:"I", "box+g":"F", "bag+g":"G"};
+async function loadLastWeek(){
+  if (!SHEET_URL.startsWith("https://") || !$("fDate").value) return;
+  try {
+    const res = await fetch(`${SHEET_URL}?before=${encodeURIComponent($("fDate").value)}`);
+    const r = await res.json();
+    if (!r.ok || !r.tab) return;
+    // Only use the Sheet if it is as new as (or newer than) what this phone already has.
+    if (state.lastDate && r.date < state.lastDate) return;
+    let n = 0;
+    for (const it of state.items) {
+      if (!(it.name in r.items)) continue;
+      if (packed(it) && r.packs[it.name]) it.pack = r.packs[it.name];
+      const row = r.items[it.name];
+      const num = v => isNum(v) ? v : null;
+      if (!row) it.last = null;
+      else if (packed(it)) {
+        const q = num(row[SHEET_COL[it.term]]), g = num(row.H);
+        it.last = (q === null && g === null) ? null : {qty: q || 0, grams: g || 0};
+      } else {
+        const q = num(row[SHEET_COL[it.term]]);
+        it.last = q === null ? null : {qty: q, grams: null};
+      }
+      n++;
+    }
+    state.lastDate = r.date; save(); render();
+    setMsg(`Last week loaded from the Sheet (${r.tab}).`);
+  } catch (e) { /* offline: keep what this phone has */ }
+}
+loadLastWeek();
+$("fDate").addEventListener("change", loadLastWeek);
 </script>
 </body>
 </html>
