@@ -146,25 +146,27 @@ const TERM_LABEL = {can:"can", bottle:"bottle", box:"box", bag:"bag", grams:"gra
 const COLS = ["Cans","Bottles","Boxes","Bags","Grams","Pieces"];
 const KEY = "stockcount.v1";
 
-// Starting list with the 01/11/2026 count as last week. [name, category, term, packGrams, lastQty, lastGrams]
+// Starting list with the 08/11/2026 count as last week. [name, category, term, packGrams, lastQty, lastGrams]
+// Spirits and Nước Dừa were not counted on 08/11, so they keep the 01/11 figures.
+const SEED_DATE = "2026-11-08";
 const SEED = [
- ["Diet Coke","SOFT DRINKS","can",0,39],["Coke Zero","SOFT DRINKS","can",0,26],["Coke Classic","SOFT DRINKS","can",0,24],
- ["Sprite","SOFT DRINKS","can",0,19],["Solo","SOFT DRINKS","can",0,37],["Sparkling Water","SOFT DRINKS","bottle",0,29],
- ["Bia SG","BEER & WINE","can",0,16],["HN Beer","BEER & WINE","bottle",0,29],["Sauvignon Blanc","BEER & WINE","bottle",0,24],
- ["Rose","BEER & WINE","bottle",0,26],["Cuvee","BEER & WINE","bottle",0,23],["Shiraz","BEER & WINE","bottle",0,20],
+ ["Diet Coke","SOFT DRINKS","can",0,17],["Coke Zero","SOFT DRINKS","can",0,18],["Coke Classic","SOFT DRINKS","can",0,28],
+ ["Sprite","SOFT DRINKS","can",0,31],["Solo","SOFT DRINKS","can",0,28],["Sparkling Water","SOFT DRINKS","bottle",0,24],
+ ["Bia SG","BEER & WINE","can",0,16],["HN Beer","BEER & WINE","bottle",0,32],["Sauvignon Blanc","BEER & WINE","bottle",0,24],
+ ["Rose","BEER & WINE","bottle",0,23],["Cuvee","BEER & WINE","bottle",0,26],["Shiraz","BEER & WINE","bottle",0,20],
  ["Smirnoff","SPIRITS","bottle",0,0.9],["Soho Lychee","SPIRITS","bottle",0,2],["Roku Gin","SPIRITS","bottle",0,0.45],
  ["Kahlua","SPIRITS","bottle",0,0.7],["Vok","SPIRITS","bottle",0,1.05],
- ["Whole Coconut","COCONUT","piece",0,1],["Nước Dừa","COCONUT","bag",0,7],["Dừa Top","COCONUT","grams",0,874.1],
- ["Cozy Trà Đào Cam","COZY TEA","box",0,7],["Cozy Trà Đào Hồng","COZY TEA","box+g",50,5,54.7],["Cozy Trà Xanh","COZY TEA","box+g",50,8,240.5],
- ["Cozy Trà Hương Nhài","COZY TEA","box+g",50,8,51.9],["Cozy Ô Long","COZY TEA","box+g",50,2,228.8],["Cozy Trà Vải","COZY TEA","box",0,2],
- ["Trà Xanh Lài","LOOSE TEA","grams",0,378.9],["Hồng Trà Túi Lọc","LOOSE TEA","grams",0,990.9],["Oolong Tea","LOOSE TEA","grams",0,546.9],
- ["Trà Hoa Cúc","LOOSE TEA","grams",0,303.1],["Mint","LOOSE TEA","grams",0,448.2],
- ["Matcha","POWDERS","bag+g",200,0,479.7],["Cacao","POWDERS","bag+g",200,2,79.4],["Bột Sữa Dừa","POWDERS","bag+g",500,1,53],
- ["Bột Sữa Khoai Môn","POWDERS","bag+g",500,0,450.7],["Bột Frappe","POWDERS","bag+g",500,1,303.1],["Bột Hoa Anh Đào","POWDERS","bag+g",500,1,0],
- ["Cafe Mixed","COFFEE","grams",0,1474.1],["Cà Phê Muối","COFFEE","grams",0,291.1],["Cafe Nâu","COFFEE","bag",0,3],["Cafe Bạc","COFFEE","bag",0,3],
- ["Thạch Dừa","TOPPINGS","box",0,3],["Thạch Xanh","TOPPINGS","box",0,2],["Thạch Đen","TOPPINGS","box",0,2],["Hạt Đác","TOPPINGS","box",0,2],
- ["Kumquat","TOPPINGS","box",0,9],["Plum Base","TOPPINGS","box",0,1],
- ["Đào","CANNED","can",0,6],["Nhãn","CANNED","can",0,4],["Vải","CANNED","can",0,2],["Thốt Nốt","CANNED","can",0,2],["Mít","CANNED","can",0,2],["Sữa Đặc","CANNED","can",0,17],
+ ["Whole Coconut","COCONUT","piece",0,3],["Nước Dừa","COCONUT","bag",0,7],["Dừa Top","COCONUT","grams",0,813],
+ ["Cozy Trà Đào Cam","COZY TEA","box",0,7],["Cozy Trà Đào Hồng","COZY TEA","box+g",50,1,661],["Cozy Trà Xanh","COZY TEA","box+g",50,4,251],
+ ["Cozy Trà Hương Nhài","COZY TEA","box+g",50,9,38],["Cozy Ô Long","COZY TEA","box+g",50,2,259],["Cozy Trà Vải","COZY TEA","box",0,2],
+ ["Trà Xanh Lài","LOOSE TEA","grams",0,315],["Hồng Trà Túi Lọc","LOOSE TEA","grams",0,977],["Oolong Tea","LOOSE TEA","grams",0,546],
+ ["Trà Hoa Cúc","LOOSE TEA","grams",0,317],["Mint","LOOSE TEA","grams",0,446],
+ ["Matcha","POWDERS","bag+g",200,0,306],["Cacao","POWDERS","bag+g",200,1,410],["Bột Sữa Dừa","POWDERS","bag+g",500,0,503],
+ ["Bột Sữa Khoai Môn","POWDERS","bag+g",500,1,0],["Bột Frappe","POWDERS","bag+g",500,1,259],["Bột Hoa Anh Đào","POWDERS","bag+g",500,1,0],
+ ["Cafe Mixed","COFFEE","grams",0,883],["Cà Phê Muối","COFFEE","grams",0,267],["Cafe Nâu","COFFEE","bag",0,4],["Cafe Bạc","COFFEE","bag",0,4],
+ ["Thạch Dừa","TOPPINGS","box",0,3],["Thạch Xanh","TOPPINGS","box",0,3],["Thạch Đen","TOPPINGS","box",0,2],["Hạt Đác","TOPPINGS","box",0,1],
+ ["Kumquat","TOPPINGS","box",0,8],["Plum Base","TOPPINGS","box",0,1],
+ ["Đào","CANNED","can",0,4],["Nhãn","CANNED","can",0,4],["Vải","CANNED","can",0,2],["Thốt Nốt","CANNED","can",0,2],["Mít","CANNED","can",0,1],["Sữa Đặc","CANNED","can",0,10],
 ];
 
 const $ = id => document.getElementById(id);
@@ -173,13 +175,26 @@ const r2 = v => Math.round(v * 100) / 100;
 let state;
 
 function seedState(){
-  return {lastDate:"2026-11-01", items: SEED.map(([name,cat,term,pack,lq,lg], i) => ({
+  return {lastDate:SEED_DATE, items: SEED.map(([name,cat,term,pack,lq,lg], i) => ({
     id: "i" + i, name, cat, term, pack: pack || null,
     last: {qty: lq, grams: term.endsWith("+g") ? (lg ?? 0) : null},
     added: null, qty: null, grams: null }))};
 }
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.items)) return s; } catch(e){}
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.items)) {
+      // Saved data from before the 08/11 count: update Last week, keep this week's entries.
+      if (!s.lastDate || s.lastDate < SEED_DATE) {
+        const fresh = seedState(), byName = {};
+        for (const it of fresh.items) byName[it.name] = it;
+        for (const it of s.items) if (byName[it.name]) { it.last = byName[it.name].last; it.pack = byName[it.name].pack; }
+        s.lastDate = SEED_DATE;
+        localStorage.setItem(KEY, JSON.stringify(s));
+      }
+      return s;
+    }
+  } catch(e){}
   return seedState();
 }
 let saveOk = true;
