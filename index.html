@@ -114,7 +114,7 @@ details.add[open] summary::before{content:"–"}
 
   <div class="bar">
     <label>Count date<input type="date" id="fDate"></label>
-    <button class="primary" id="xlsxBtn" type="button">Make Excel file</button>
+    <span class="confirm" id="sendBox"></span>
     <span class="spacer"></span>
     <span class="confirm" id="newWeek">
       <button class="ghost" id="newWeekBtn" type="button">Start new week</button>
@@ -137,7 +137,6 @@ details.add[open] summary::before{content:"–"}
   </details>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
 // ---------- setup ----------
 const TERMS = {can:["Cans","cans"], bottle:["Bottles","bottles"], box:["Boxes","boxes"], bag:["Bags","bags"],
@@ -200,7 +199,7 @@ function load(){
 let saveOk = true;
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(state)); saveOk = true; }
-  catch(e){ if (saveOk) setMsg("This browser isn't saving (private window?). Make the Excel file before closing.", true); saveOk = false; }
+  catch(e){ if (saveOk) setMsg("This browser isn't saving (private window?). Send it to the Google Sheet before closing.", true); saveOk = false; }
 }
 function setMsg(t, err){ $("msg").textContent = t || ""; $("msg").className = "msg" + (err ? " err" : ""); }
 
@@ -374,53 +373,47 @@ function askNewWeek(){
 }
 newWeekButton();
 
-// ---------- Excel (same layout as the owner's stock file) ----------
-async function makeExcel(){
-  if (typeof ExcelJS === "undefined") return setMsg("The Excel maker didn't load. Check the internet connection and reload.", true);
-  const date = $("fDate").value; const [y, m, d] = date.split("-");
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet(`Stock ${d}-${m}-${y}`, {views: [{state: "frozen", xSplit: 1, ySplit: 4, showGridLines: false}]});
-  const A = {name: "Arial", size: 10}, NAVY = "FF1F4E78", GREEN = "FF2E7D32", ORANGE = "FFC55A11";
-  const B = {style: "thin", color: {argb: "FFBFBFBF"}}, border = {top: B, bottom: B, left: B, right: B};
-  ws.getCell("A1").value = `Stock Count ${d}/${m}/${y}`; ws.getCell("A1").font = {name: "Arial", size: 14, bold: true, color: {argb: NAVY}};
-  ws.getCell("A2").value = "Used = Last Week + Added − This Week. Bag/box + grams items: Used is in grams. Red = more stock than expected: check for a missing delivery or a count mistake.";
-  ws.getCell("A2").font = {...A, italic: true, color: {argb: "FF595959"}};
-  const head = (cell, text, color) => { const c = ws.getCell(cell); c.value = text; c.font = {...A, bold: true, color: {argb: "FFFFFFFF"}};
-    c.fill = {type: "pattern", pattern: "solid", fgColor: {argb: color}}; c.alignment = {horizontal: "center", vertical: "middle", wrapText: true}; c.border = border; };
-  head("A3", "Item", NAVY); head("B3", "Last Week", ORANGE); head("C3", "Added", GREEN); head("D3", "This Week Count", NAVY); head("J3", "Used", ORANGE);
-  COLS.forEach((u, i) => head(String.fromCharCode(68 + i) + "4", u, NAVY));
-  ws.mergeCells("A3:A4"); ws.mergeCells("B3:B4"); ws.mergeCells("C3:C4"); ws.mergeCells("D3:I3"); ws.mergeCells("J3:J4");
-  let r = 5;
-  for (const cat of categories()) {
-    const cr = ws.getRow(r++); cr.getCell(1).value = cat;
-    for (let c = 1; c <= 10; c++) { const x = cr.getCell(c); x.fill = {type: "pattern", pattern: "solid", fgColor: {argb: "FFDDEBF7"}}; x.font = {...A, bold: true, color: {argb: NAVY}}; x.border = border; }
-    for (const it of state.items.filter(i => i.cat === cat)) {
-      const row = ws.getRow(r++);
-      row.getCell(1).value = it.name;
-      row.getCell(2).value = describe(it, it.last);
-      if (isNum(it.added)) { row.getCell(3).value = it.added; row.getCell(3).numFmt = `General" ${packed(it) ? TERMS[it.term][0].toLowerCase() : TERMS[it.term][1]}"`; }
-      const main = 4 + COLS.indexOf(TERMS[it.term][0]);
-      if (isNum(it.qty)) row.getCell(main).value = it.qty;
-      if (packed(it) && isNum(it.grams)) row.getCell(8).value = it.grams;
-      const v = used(it);
-      if (v !== null) { const c = row.getCell(10); c.value = v; c.numFmt = `General" ${usedUnit(it)}"`;
-        if (v < 0) { c.fill = {type: "pattern", pattern: "solid", fgColor: {argb: "FFFCE4E4"}}; c.font = {...A, bold: true, color: {argb: "FFC00000"}}; } }
-      for (let c = 1; c <= 10; c++) { const x = row.getCell(c); if (!(c === 10 && v < 0)) x.font = {...A, bold: c === 3 || c === 10, color: {argb: c === 3 ? GREEN : c === 2 ? "FF595959" : "FF000000"}};
-        x.border = border; x.alignment = {horizontal: c === 1 ? "left" : "center", vertical: "middle"}; }
-    }
-  }
-  [24, 20, 12, 8, 9, 8, 8, 10, 8, 12].forEach((w, i) => ws.getColumn(i + 1).width = w);
-  const ps = wb.addWorksheet("Pack Sizes");
-  ps.addRow(["Item", "1 full pack (g)"]).eachCell(c => { c.font = {...A, bold: true, color: {argb: "FFFFFFFF"}}; c.fill = {type: "pattern", pattern: "solid", fgColor: {argb: NAVY}}; });
-  for (const it of state.items.filter(packed)) ps.addRow([it.name, it.pack]);
-  ps.getColumn(1).width = 24; ps.getColumn(2).width = 16;
-  const buf = await wb.xlsx.writeBuffer();
-  const url = URL.createObjectURL(new Blob([buf], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
-  const a = document.createElement("a"); a.href = url; a.download = `Stock_Count_${date}.xlsx`; document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-  setMsg(`Downloaded Stock_Count_${date}.xlsx.`);
+// ---------- send to BV Stock_Count_Owner (Google Sheet) ----------
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbw-2ov3DrADfaKZ6T_0B81GNmsyjl2pYbbBXy1C1pogMK41Gco-5E1fycpPKKEASELgiw/exec";
+function sendButton(){
+  const box = $("sendBox"); box.innerHTML = "";
+  const b = document.createElement("button"); b.className = "primary"; b.type = "button"; b.textContent = "Send to Google Sheet";
+  b.addEventListener("click", askSend); box.append(b);
 }
-$("xlsxBtn").addEventListener("click", () => { $("xlsxBtn").disabled = true; makeExcel().catch(() => setMsg("The Excel file couldn't be made.", true)).finally(() => $("xlsxBtn").disabled = false); });
+function tabName(){ const [y, m, d] = $("fDate").value.split("-"); return `Stock ${d}-${m}-${y}`; }
+function askSend(){
+  if (!$("fDate").value) return setMsg("Pick the count date first.", true);
+  const n = state.items.length - state.items.filter(counted).length;
+  const box = $("sendBox"); box.innerHTML = "";
+  const t = document.createElement("span");
+  t.textContent = `Are you sure? This makes a new tab "${tabName()}" in BV Stock_Count_Owner.` + (n ? ` ${n} items aren't counted.` : "");
+  const yes = document.createElement("button"); yes.className = "primary"; yes.type = "button"; yes.textContent = "Yes, send";
+  const no = document.createElement("button"); no.className = "ghost"; no.type = "button"; no.textContent = "Cancel";
+  no.onclick = sendButton;
+  yes.onclick = () => { yes.disabled = no.disabled = true; yes.textContent = "Sending..."; sendToSheet().finally(sendButton); };
+  box.append(t, yes, no);
+}
+async function sendToSheet(){
+  if (!SHEET_URL.startsWith("https://")) return setMsg("The Google Sheet link isn't set up yet.", true);
+  const rows = [];
+  for (const cat of categories()) {
+    rows.push({type: "cat", name: cat});
+    for (const it of state.items.filter(i => i.cat === cat)) rows.push({
+      type: "item", name: it.name, term: it.term, pack: it.pack || null,
+      last: lastCounted(it) ? describe(it, it.last) : "",
+      added: isNum(it.added) ? it.added : null, qty: isNum(it.qty) ? it.qty : null, grams: isNum(it.grams) ? it.grams : null,
+      cUnit: packed(it) ? TERMS[it.term][0].toLowerCase() : TERMS[it.term][1], jUnit: usedUnit(it)});
+  }
+  try {
+    const res = await fetch(SHEET_URL, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify({date: $("fDate").value, rows})});
+    const r = await res.json();
+    if (r.ok) setMsg(`Sent. New tab "${r.tab}" is in BV Stock_Count_Owner.`);
+    else if (r.exists) setMsg(`Not sent: the tab "${r.tab}" already exists. Delete it in the Sheet first, or change the count date.`, true);
+    else setMsg(`Not sent: ${r.error || "the Sheet gave an error."}`, true);
+  } catch (e) { setMsg("Not sent. Check the internet connection and try again.", true); }
+}
+sendButton();
 
 // ---------- start ----------
 state = load();
