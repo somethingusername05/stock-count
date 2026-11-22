@@ -148,7 +148,7 @@ const KEY = "stockcount.v1";
 // Starting list with the 15/11/2026 count as last week. [name, category, term, packGrams, lastQty, lastGrams]
 // Bột Sữa Dừa 461.4 read as grams. Nước Dừa is no longer counted.
 const SEED_DATE = "2026-11-15";
-const SEED_VERSION = 1;
+const SEED_VERSION = 3;
 const REMOVED = ["Nước Dừa"]; // items no longer counted, removed from every phone // raise this whenever SEED is corrected, so phones pick up the fix
 const SEED = [
  ["Diet Coke","SOFT DRINKS","can",0,40],["Coke Zero","SOFT DRINKS","can",0,45],["Coke Classic","SOFT DRINKS","can",0,26],
@@ -187,11 +187,12 @@ function load(){
     if (s && Array.isArray(s.items)) {
       s.items = s.items.filter(it => !REMOVED.includes(it.name));
       // Saved data from before the 15/11 count: update Last week, keep this week's entries.
-      if (!s.lastDate || s.lastDate < SEED_DATE || (s.lastDate === SEED_DATE && (s.seedVersion || 0) < SEED_VERSION)) {
+      const SEED_KEY = SEED_DATE + "#" + SEED_VERSION;
+      if (s.seedKey !== SEED_KEY && (!s.lastDate || String(s.lastDate).slice(0, 10) <= SEED_DATE)) {
         const fresh = seedState(), byName = {};
         for (const it of fresh.items) byName[it.name] = it;
         for (const it of s.items) if (byName[it.name]) { it.last = byName[it.name].last; it.pack = byName[it.name].pack; }
-        s.lastDate = SEED_DATE; s.seedVersion = SEED_VERSION;
+        s.lastDate = SEED_DATE; s.seedVersion = SEED_VERSION; s.seedKey = SEED_KEY;
         localStorage.setItem(KEY, JSON.stringify(s));
       }
       return s;
@@ -433,7 +434,7 @@ async function loadLastWeek(){
     const r = await res.json();
     if (!r.ok || !r.tab) return;
     // Only use the Sheet if it is as new as (or newer than) what this phone already has.
-    if (state.lastDate && r.date < state.lastDate) return;
+    if (state.lastDate && String(r.date).slice(0, 10) < String(state.lastDate).slice(0, 10)) return;
     let n = 0;
     for (const it of state.items) {
       if (!(it.name in r.items)) continue;
@@ -450,7 +451,8 @@ async function loadLastWeek(){
       }
       n++;
     }
-    state.lastDate = r.date; save(); render();
+    if (!n) return;
+    state.lastDate = String(r.date).slice(0, 10); save(); render();
     setMsg(`Last week loaded from the Sheet (${r.tab}).`);
   } catch (e) { /* offline: keep what this phone has */ }
 }
